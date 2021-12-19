@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <h1>Гипервекторная визуализация</h1>
+
+
+    <link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body>
+
+<button onclick="addTableRow()">
+    Добавить компоненту сигнала
+</button>
+
+
+<form>
+    <p>
+
+
+    <table id="signal_table">
+        <tr>
+            <th>№ составляющей</th>
+            <th>Тип составляющей сигнала</th>
+            <th>Амплитуда составляющей</th>
+            <th>Постоянная времени составляющей</th>
+            <th>Частота составляющей</th>
+            <th>Фаза составляющей</th>
+            <th>Удаление составляющей</th>
+        </tr>
+        <tr>
+            <td id="component_id">1</td>
+            <td id="component_type_id">
+                <select id="component_type" >
+                    <option id="1" value="const">Постоянная составляющая</option>
+                    <option id="2" value="aper">Апериодическая составляющая</option>
+                    <option id="3" value="harm">Гармонитческая составляющая</option>
+                </select>
+            </td>
+
+            <td><input class="input_data" type="text" id="amp" ></td>
+            <td><input class="input_data" type="text" id="T" ></td>
+            <td><input class="input_data" type="text" id="f" ></td>
+            <td><input class="input_data" type="text" id="phi" ></td>
+            <td class="deleteRow">
+                Удалить
+            </td>
+        </tr>
+
+
+<!--        <tr>-->
+<!--            <td>1</td>-->
+<!--            <td>-->
+<!--                <select>-->
+<!--                    <option value="const" >Постоянная составляющая</option>-->
+<!--                    <option value="aper">Апериодическая составляющая</option>-->
+<!--                    <option value="harm">Гармонитческая составляющая</option>-->
+<!--                </select>-->
+<!--            </td>-->
+<!--            <td>кг</td>-->
+<!--            <td>15,20</td>-->
+<!--            <td>69,00</td>-->
+<!--            <td>1048,80</td>-->
+<!--        </tr>-->
+
+
+
+
+    </table>
+
+
+    <!--        <label>-->
+    <!--            Постоянная составляющая:-->
+    <!--            <input id="const" type="number" value="6" min="1" max="40" step="1">-->
+    <!--        </label>-->
+    <!--        <br>-->
+    <!--        Апериодическая составляющая:-->
+    <!--    <ul>-->
+    <!--        <li>Значение <input id="A_aper" type="number" value="6" min="1" max="40" step="1"></li>-->
+    <!--        <li>Постоянная времени <input id="t_aper" type="number" value="6" min="1" max="40" step="1"></li>-->
+    <!--    </ul>-->
+
+    <!--    <input id="size" type="number" value="6" min="1" max="40" step="1">-->
+    <!--    </label>-->
+
+
+
+
+
+
+
+</form>
+
+<p></p>
+<button onclick="generateSignal()">
+    Сгенерировать сигнал
+</button>
+
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+    var π = Math.PI
+    var two_π = 2 * Math.PI
+    var components;
+
+    //Шаг дискретизации (сек)
+    var dt = 50 * Math.pow(10,-6);
+
+    //Длительность процесса (сек)
+    var t = 1;
+
+    //Режимы работы
+    var types = {
+        square: function (n) {
+            return (((n + 1) % 2) ? 0 : 1) / n;
+        },
+        triangle: function (n) {
+            if (!(n % 2)) return 0;
+            return ((n % 4 === 1) ? 1 : -1) / (n * n);
+        },
+        sawtooth: function (n) {
+            return ((n % 2) ? -1 : 1) / (n + 1);
+        },
+        fibonacci: function (n) {
+            var fst = 0.01, sec = 0.01, add;
+            for (var i = 0; i < n; i++) {
+                add = fst + sec;
+                fst = sec;
+                sec = add;
+            }
+            return add;
+        },
+        pulse: function (n) {
+            return 0.1;
+        }
+    };
+
+    function FT(A, N, φ) {
+        φ = φ || 0;
+        return function (x) {
+            var n = -1, y = 0;
+            while (++n < N) {
+                //Формула под вопросом
+                y += A[n] * Math.sin(two_π * (n + 1) * x + φ);
+            }
+            return y;
+        }
+    }
+
+
+
+    function createPlot() {
+
+
+        //Отступ от пред графика
+        var plot_margin = 50;
+
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", W)
+            .attr("height", H)
+
+
+        svg.append("text")
+            .attr("transform", "translate(100,0)")
+            .attr("x", 50)
+            .attr("y", plot_margin)
+            .attr("font-size", "20px")
+            .attr("class", "title")
+            .text("Population bar chart")
+
+
+
+
+        svg.append("line")
+            .attr("class", "axis")
+            .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
+            .attr("y2", margin.top + yCirc(0)).attr("x2", W);
+
+        svg.append("line")
+            .attr("class", "axis")
+            .attr("x1", margin.left + xCirc(0)).attr("y1", plot_margin)
+            .attr("x2", margin.left + xCirc(0)).attr("y2", H);
+
+
+
+
+
+
+
+    }
+
+
+
+
+
+    /////////////////////////////////////////////////////////////////////
+
+    //Работа с таблицей!!!!!!!!!!!!!!!!!!
+
+    function generateSignal(){
+
+        //Итерируемся по таблице и собираем коэффициенты каждой составляющей
+        var table = document.getElementById("signal_table"); // find table to append to
+
+        components = new Array(table.rows.length-1);
+
+        for (var i = 1; i < table.rows.length; i++) {
+            components[i-1] = new Array(4);
+            components[i-1][0] = parseFloat(table.rows[i].cells[2].children[0].value);
+            components[i-1][1] = parseFloat(table.rows[i].cells[3].children[0].value);
+            components[i-1][2] = parseFloat(table.rows[i].cells[4].children[0].value);
+            components[i-1][3] = parseFloat(table.rows[i].cells[5].children[0].value);
+
+            //Преобразование Nan в 0
+            components[i-1] = components[i-1].map(i =>{ return isNaN(i) ? 0 : i});
+
+            //Создание графиков
+            createPlot();
+
+        }
+
+        console.log(components)
+
+    }
+
+
+    function addTableRow(){
+        var table = document.getElementById("signal_table"); // find table to append to
+
+
+        //Проверка на отсутствие строк
+        if(table.rows.length===1){
+
+            table.insertRow(-1).innerHTML = '<td id="component_id">1</td>\n' +
+                '            <td id="component_type_id">\n' +
+                '                <select id="component_type" >\n' +
+                '                    <option id="1" value="const">Постоянная составляющая</option>\n' +
+                '                    <option id="2" value="aper">Апериодическая составляющая</option>\n' +
+                '                    <option id="3" value="harm">Гармонитческая составляющая</option>\n' +
+                '                </select>\n' +
+                '            </td>\n' +
+                '            <td><input className="input_data" type="text" id="amp"></td>\n' +
+                '            <td><input className="input_data" type="text" id="T"></td>\n' +
+                '            <td><input className="input_data" type="text" id="f"></td>\n' +
+                '            <td><input className="input_data" type="text" id="phi"></td>\n' +
+                '            <td class="deleteRow">\n' +
+                '                Удалить\n' +
+                '            </td> '
+            return
+        }
+
+
+
+        var row = table.rows[table.rows.length-1];
+        var clone = row.cloneNode(true); // copy children too
+        table.appendChild(clone); // add new row to end of table
+
+        //Обновить индексы для компонент
+        table.rows[table.rows.length-1].cells[0].textContent = (table.rows.length-1).toString();
+
+
+    }
+
+
+
+    signal_table.addEventListener('click', function(evt){
+        if(evt.target.closest('.deleteRow')) {
+            evt.target.closest('tr').remove()
+        }
+        refreshIndex(document.getElementById("signal_table"))
+    })
+
+
+    function refreshIndex(table) {
+        for (i = 1; i < table.rows.length; i++) {
+            table.rows[i].cells[0].textContent = i.toString();
+        }
+
+    }
+
+////////////////////////////////////////////////////////////////////////////////////
+
+
+    // function deleteTableRow(hh){
+    //
+    //     console.log(hh)
+    //
+    //     // var table = document.getElementById("signal_table"); // find table to append to
+    //     // // console.log(table)
+    //     //
+    //     // ell = table.closest("tr"); // tr element (ваша строчка)
+    //     //
+    //     // console.log(ell)
+    //     // ell.parentElement.removeChild(ell); // удаляем всю строку
+    //     //Обновить индексы для компонент
+    //     // table.rows[table.rows.length-1].cells[0].textContent = (table.rows.length-1).toString();
+    // }
+
+
+
+    // document.querySelector('.delete_signal_component').addEventListener('click', deleteTableRow());
+
+
+
+
+    // function once(fn) {
+    //     var exec = false;
+    //     return function () {
+    //         if (exec) return;
+    //         exec = true,
+    //         fn && fn();
+    //     };
+    // }
+
+    var
+        //Прорисовка самого полотна
+        margin = {top: 40, right: 100, bottom: 40, left: 100},
+        W = 1200,
+        H = 500,
+        w = W - margin.left - margin.right,
+        h = H - margin.top - margin.bottom,
+
+        radius = 140,
+        theta = 0,
+        xmax = 1.5,
+        rate = 1 / 60,
+
+        tDomain = d3.range(0, 1.1, 1 / 1000),   // trace domain
+        gDomain = d3.range(0, xmax, xmax / 1000), // graph domain
+
+        C = types.square, // coeffiecients
+        L = 6,            // size
+        F = 0.3,          // frequence
+
+        yCirc = d3.scale.linear().domain([-1, 1]).range([h / 2 + radius, h / 2 - radius]),
+        xCirc = d3.scale.linear().domain([-1, 1]).range([0, 2 * radius]),
+        rAxis = d3.scale.linear().domain([0, 1]).range([0, radius]),
+        xAxis = d3.scale.linear().range([radius, W - margin.left]),
+
+        Fxy, fx, fy,
+
+        draw, timer, data = [];
+
+    //Прорисовка фурье
+    var graph = d3.svg.line()
+        .x(function (d) {
+            return xAxis(d);
+        })
+        .y(function (d) {
+            return yCirc(fy(theta - d));
+        });
+
+
+    //Проекция (1 линия, прорисовыващая проекцию (график))
+    var proj = d3.svg.line()
+        .x(function (d) {
+            return xCirc(d.x);
+        })
+        .y(function (d) {
+            return yCirc(d.y);
+        });
+
+
+    //Движение прорисованного графика
+
+    var trace = d3.svg.line()
+        .x(function (d) {
+            return xCirc(fx(d));
+        })
+        .y(function (d) {
+            return yCirc(fy(d));
+        });
+
+
+
+    function gTransform(d) {
+        return "translate(" + xCirc(d.x) + "," + yCirc(d.y) + ")";
+    }
+
+    function hTransform(d) {
+        return "translate(" + xAxis(d.f) + "," + yCirc(0) + ")";
+    }
+
+
+
+
+    var svg = d3.select("body")
+        .append("svg")
+        .attr("width", W)
+        .attr("height", H)
+
+    svg.append("line")
+        .attr("class", "axis")
+        .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
+        .attr("y2", margin.top + yCirc(0)).attr("x2", W);
+
+    svg.append("line")
+        .attr("class", "axis")
+        .attr("x1", margin.left + xCirc(0)).attr("y1", 0)
+        .attr("x2", margin.left + xCirc(0)).attr("y2", H);
+
+    var vis = svg.append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var gPath = vis.append("path").attr("class", "graph");
+    var tPath = vis.append("path").attr("class", "trace");
+    var pPath = vis.append("path").attr("class", "proj");
+
+
+
+
+
+
+    function cache() {
+        var A;
+        if (typeof C === "function") {
+            A = d3.range(1, L + 1).map(C);
+        } else {
+            A = C.slice(0, L);
+        }
+
+        fx = FT(A, L - 1, π / 2);
+        fy = FT(A, L - 1, 0),
+
+            Fxy = A.map(function (a, i) {
+                return {X: FT(A, i, π / 2), Y: FT(A, i, 0), r: Math.abs(a)};
+            });
+    }
+
+    function calc() {
+        if (!Fxy) cache();
+        Fxy.forEach(function (f, i) {
+            var d = data[i] || (data[i] = {x: 0, y: 0, r: 0});
+            d.x = f.X(theta);
+            d.y = f.Y(theta);
+            d.r = f.r;
+            d.f = i + 1;
+        });
+        data.length = Fxy.length;
+        return data;
+    }
+
+    function coeff() {
+        var co = vis.selectAll(".coeff").data(calc());
+
+        // exit
+        co.exit().remove();
+
+        // enter
+        var en = co.enter().append("g").attr("class", "coeff");
+
+        en.append("circle").attr("class", "circle");
+        en.append("circle").attr("class", "dot").attr("r", 3);
+
+        // update
+        co.classed("last", function (d, i) {
+            return i === L - 1;
+        });
+        co.classed("first", function (d, i) {
+            return i === 0;
+        });
+
+        co.select(".circle").attr("r", function (d) {
+            return rAxis(d.r);
+        })
+
+        return co;
+    }
+
+    function drawGraph() {
+        xAxis.domain([0, xmax]);
+        coeff().attr("transform", gTransform);
+        var last = data[data.length - 1];
+        pPath.attr("d", proj([last, {x: 0, y: last.y}]));
+        gPath.attr("d", graph(gDomain));
+        tPath.attr("d", trace(tDomain));
+    }
+
+    function drawHisto() {
+        xAxis.domain([1, L]);
+        coeff().attr("transform", hTransform);
+    }
+
+    function toggle(callback) {
+        var tran;
+        tran = (draw === drawGraph) ? hTransform : gTransform;
+        draw = (draw === drawGraph) ? drawHisto : drawGraph;
+        coeff().transition()
+            .duration(1000)
+            .attr("transform", tran)
+            .each("end", once(callback));
+    }
+
+
+    function toggleGraph() {
+        xAxis.domain([0, xmax]);
+        toggle(function () {
+            pPath.classed("hide", false);
+            gPath.classed("hide", false);
+            tPath.classed("hide", false);
+            play();
+        });
+    }
+
+    function toggleHisto() {
+        xAxis.domain([1, L]);
+        pPath.classed("hide", true);
+        gPath.classed("hide", true);
+        tPath.classed("hide", true);
+        pause();
+        toggle(drawHisto);
+    }
+
+    function play() {
+        if (timer) return;
+        (function loop() {
+            drawGraph();
+            theta += F * rate;
+            timer = setTimeout(loop, rate * 1000);
+        })();
+    }
+
+    function pause() {
+        if (!timer) return;
+        clearTimeout(timer);
+        timer = null;
+    }
+
+    function redraw() {
+        cache();
+        draw();
+    }
+
+    d3.select("svg").on("click", function () {
+        (draw === drawHisto) ? toggleGraph() : toggleHisto();
+    });
+    d3.select("#freq").on("change", function () {
+        F = +this.value;
+        redraw();
+    });
+    d3.select("#size").on("change", function () {
+        L = +this.value;
+        redraw();
+    });
+    d3.select("#type").on("change", function () {
+        C = types[this.value];
+        redraw();
+    });
+
+    draw = drawGraph;
+    play();
+
+
+
+
+</script>
+
+</body>

@@ -1,0 +1,87 @@
+body{
+    font: 16px/16px "Times New Roman", Helvetica, Arial, sans-serif;
+    margin: auto;
+    position: relative;
+    width: 960px;
+}
+form {
+    /*position: absolute;*/
+    top: 10px;
+    left: 10px;
+}
+
+label{
+    font: 18px/18px "Times New Roman", Helvetica, Arial, sans-serif;
+}
+
+
+
+table{
+    text-align: center
+}
+
+.add-row{
+    top: 10px;
+    left: 10px;
+}
+
+table, th, td {
+    /*table-layout: fixed;*/
+    width: 100%;
+    border-collapse: collapse;
+    border: 3px solid purple;
+
+}
+
+td select {
+    border: none;
+}
+
+.deleteRow{
+    color: red;
+}
+
+
+.input_data{
+    
+}
+
+
+
+
+
+
+
+.coeff .dot {
+    fill: hsla(207, 63%, 27%, 0.2);
+}
+.coeff.last .dot {
+    fill: hsla(207, 63%, 27%, 1.0);
+}
+.coeff .circle {
+    fill: none;
+    stroke: hsl(0, 0%, 70%);
+}
+.coeff.first .circle {
+    fill: none;
+    stroke: hsl(0, 0%, 30%);
+}
+.coeff.last .circle {
+    display: none;
+}
+.graph {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 3px;
+}
+.trace {
+    fill: none;
+    stroke: steelblue;
+}
+.proj {
+    fill: none;
+    stroke: #000;
+}
+.axis {
+    stroke: hsl(0, 0%, 70%);
+}
