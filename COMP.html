@@ -1,0 +1,272 @@
+<html>
+<head>
+    <title>Complex number division</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+    <style type="text/css">
+
+        body{
+            font-family:sans-serif;
+        }
+
+        .output{
+            display: -webkit-box;
+            display: -moz-box;
+            display: -ms-flexbox;
+            display: -moz-flex;
+            display: -webkit-flex;
+            display: flex;
+
+            -webkit-justify-content: start;
+            justify-content: start;
+
+            -webkit-align-items: center;
+            align-items: center;
+
+            -webkit-flex-flow: wrap;
+            flex-flow: wrap;
+        }
+
+        .question{
+            display: inline-block;
+            width:130px;
+        }
+
+        .numerator{
+            color: red;
+            text-align: center;
+        }
+
+        #numerator-point{
+            fill: red;
+            stroke:#000;
+            stroke-width:1px;
+        }
+
+        .denominator{
+            color: #ffb000;
+            border-top: 1px solid #000;
+            text-align: center;
+        }
+
+        #denominator-point{
+            fill: #ffb000;
+            stroke:#000;
+            stroke-width:1px;
+        }
+
+
+        .answer{
+            padding-left: 30px;
+            display: inline-table;
+        }
+
+
+        .axis{
+            font-size: 10;
+            stroke-opacity:0.2;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .domain{
+            fill:none;
+            stroke:#000;
+        }
+        .tick line{
+            stroke:#000;
+        }
+
+        .in-line{
+            stroke:#000;
+            stroke-width:1;
+            stroke-dasharray:5, 5;
+        }
+
+        .out-line{
+            stroke:#000;
+            stroke-width:1;
+        }
+
+        .moveable{
+            stroke-width: 1px;
+            stroke:#000;
+            cursor: pointer;
+            cursor: hand;
+        }
+    </style>
+</head>
+<body>
+<h1>Complex number division</h1>
+<div><p>Drag the red and orange circles around the <a href="https://en.wikipedia.org/wiki/Complex_plane">complex plane</a> to set the numerator/denominator.</p><p>The black circle is the answer.</p></div>
+<div class="content">
+    <div class="output">
+        <div class="question">
+            <div class="numerator">a + bi</div>
+            <div class="denominator">c + di</div>
+        </div>
+        <div class="answer">= <b>q + pi</b>
+        </div>
+    </div>
+    <div class="complex-plane"></div>
+
+</div>
+</body>
+<script type="text/javascript">
+
+    var extent = 50,
+        pointNumerator = {r:45,i:0},
+        pointDenominator = {r:5, i:-5},
+        width = 500, height = 500,
+        margin = {top:10, left:10, bottom:10, right:10},
+        plotWidth = width-(margin.left+margin.right),
+        plotHeight = height-(margin.top+margin.bottom);
+
+    var drag = d3.behavior.drag()
+        .on('drag', dragmove);
+
+    var scaleX = d3.scale.linear()
+        .domain([-extent, +extent])
+        .range([0, plotWidth]);
+
+    var scaleY = d3.scale.linear()
+        .domain([extent, -extent])
+        .range([0, plotWidth]);
+
+    var xAxis = d3.svg.axis().scale(scaleX)
+        .orient('bottom');
+    var yAxis = d3.svg.axis().scale(scaleY)
+        .orient('left');
+
+    var svg = d3.select('.complex-plane').append('svg')
+        .attr({
+            width:500,
+            height:500
+        })
+        .append('g')
+        .attr('transform','translate('+margin.left+','+margin.top+')');
+
+    svg.append('g').attr({
+        'class':'x axis',
+        'transform':'translate(0,'+plotWidth/2+')'
+    }).call(xAxis);
+
+    svg.append('g').attr({
+        'class':'y axis',
+        'transform':'translate('+plotHeight/2+',0)'
+    }).call(yAxis);
+
+    var lines = svg.append('g');
+    var points = svg.append('g');
+
+    update();
+
+    function dragmove(d) {
+        var el = d3.select(this);
+        var value = {
+            r: d3.round(scaleX.invert(d3.event.x), 2),
+            i: d3.round(scaleY.invert(d3.event.y), 2)
+        };
+        if(this.id == 'numerator-point'){
+            pointNumerator = value;
+        }else if(this.id == 'denominator-point'){
+            pointDenominator = value;
+        }
+        update();
+    }
+
+    function update(){
+        pointResult = complexDivision(pointNumerator, pointDenominator);
+
+        var pointsData = [
+            { p:pointNumerator, id:'numerator' },
+            { p:pointDenominator, id:'denominator' },
+            { p:pointResult, id:'result' }
+        ];
+
+        lines.selectAll('line').data(pointsData, function(d){return d.id})
+            .enter()
+            .append('line')
+            .attr({
+                'x1':scaleX(0),
+                'y1':scaleY(0),
+                'id': function(d){ return d.id + '-line'; },
+                'class':function(d){
+                    if(d.id == 'result'){
+                        return 'out-line';
+                    }
+                    return 'in-line';
+                }
+            });
+
+        lines.selectAll('line')
+            .attr({
+                'x2':function(d){ return scaleX(d.p.r); },
+                'y2':function(d){ return scaleY(d.p.i); }
+            });
+
+        points.selectAll('circle').data(pointsData, function(d){return d.id})
+            .enter()
+            .append('circle')
+            .attr({
+                'id':function(d){ return d.id + '-point'; },
+                'r':7
+            }).filter(function(d){
+            return d.id != 'result';
+        })
+            .attr({
+                'class':'moveable'
+            })
+            .call(drag);
+
+        points.selectAll('circle')
+            .attr({
+                'cx':function(d){ return scaleX(d.p.r); },
+                'cy':function(d){ return scaleY(d.p.i); }
+            });
+
+        d3.select('.numerator').text(complexString(pointNumerator));
+        d3.select('.denominator').text(complexString(pointDenominator));
+        d3.select('.answer').text(' = ' + complexString(pointResult))
+    }
+
+    //complex number stuff
+
+    function complexString(complex){
+        return d3.round(complex.r, 2) + ' + ' + d3.round(complex.i, 2) + 'i';
+    }
+
+    function complexModulus(complex){ // or magnitude, norm
+        return Math.sqrt( complex.i * complex.i + complex.r * complex.r );
+    }
+
+    function complexPhase(complex){ // or argument
+        Math.arctan(complex.i / complex.r);
+    }
+
+    function complexDivision(numerator, denominator){
+        var a = numerator.r, b = numerator.i,
+            c = denominator.r, d = denominator.i,
+            output = {},
+            e, f;
+        if( Math.abs(c) >= Math.abs(d) ) {
+            e = d / c;
+            f = c + d * e;
+            output.r = (a + b*e) / f;
+            output.i = (b - a*e) / f;
+        } else {
+            e = c / d;
+            f = c * e + d;
+            output.r = (a*e + b) / f;
+            output.i = (b*e - a) / f;
+        }
+        return output;
+    }
+
+    d3.select(self.frameElement).style("height", d3.select('.content').node().getBoundingClientRect().height + "px");
+
+</script>
+</html>

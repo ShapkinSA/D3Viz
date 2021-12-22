@@ -91,24 +91,42 @@
 
 </form>
 
+
 <p></p>
 <button onclick="generateSignal()">
     Сгенерировать сигнал
 </button>
 
 
-<script src="https://d3js.org/d3.v3.min.js"></script>
+
+<!--<div class="complex-plane"></div>-->
+
+<!--<script src="https://d3js.org/d3.v4.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+
 <script>
+
+    class Point {
+
+        constructor(x,y) {
+            this.x = x;
+            this.y = y;
+        }
+
+    }
+
 
     var π = Math.PI
     var two_π = 2 * Math.PI
     var components;
 
     //Шаг дискретизации (сек)
-    var dt = 50 * Math.pow(10,-6);
+    var dt = 5 * Math.pow(10,-2);
 
     //Длительность процесса (сек)
-    var t = 1;
+    var t_lim = 1;
+
+    var t;
 
     //Режимы работы
     var types = {
@@ -150,44 +168,328 @@
 
 
 
-    function createPlot() {
 
+    function formMagn(component){
+        // A*exp(-1/T/t(i))*sin(2*pi*f*t(i)+phi)
+        var amp_t = Array(t.length);
+
+        for (var n = 0; n < t.length; n++) {
+            amp_t[n] = component[0]*Math.exp(-1/component[1]*t[n]);
+        }
+        return amp_t;
+    }
+
+
+
+    function formPhase(component){
+        // A*exp(-1/T/t(i))*sin(2*pi*f*t(i)+phi)
+        var phase_t = Array(t.length);
+
+        for (var n = 0; n < t.length; n++) {
+            phase_t[n] = two_π*component[2]*t[n] + component[3];
+        }
+        return phase_t;
+    }
+
+
+    function formRealImage(component){
+
+        let amp_t = formMagn(component);
+        let phase_t = formPhase(component);
+
+        //Двумерный массив мнимой и действительной части
+        var realImage = Array(t.length);
+
+
+
+
+        for (var n = 0; n < t.length; n++) {
+            let R = amp_t[n]*Math.cos(phase_t[n]);
+            let I = amp_t[n]*Math.sin(phase_t[n]);
+
+            // realImage[n] = new Array(2);
+            // realImage[n][0] = R;
+            // realImage[n][1] = I;
+
+            realImage[n]  = new Point(R,I)
+
+
+        }
+
+
+
+        return realImage;
+    }
+
+
+
+
+    function createPlot(i) {
+
+
+
+        //Параметры данной компоненты
+        var component = components[i-1];
+
+
+        //Расчёт всех точек для построения вращения вектора
+        let realImage = formRealImage(component);
+
+
+        let svg = createSvgAxis(realImage,i);
+
+
+
+        //Прорисовка стрелки
+        drowArrow(svg,[0,0,50,70],2,"black")
+
+
+    }
+
+
+    function createSvgAxis(realImage,i){
 
         //Отступ от пред графика
-        var plot_margin = 50;
+        var plot_margin = 25;
 
-        var svg = d3.select("body")
+
+        // var margin = {top: 10, right: 30, bottom: 30, left: 60},
+        //     width = 460 - margin.left - margin.right,
+        //     height = 400 - margin.top - margin.bottom;
+        //
+        // // append the svg object to the body of the page
+        // var svg = d3.select("body")
+        //     .append("svg")
+        //     .attr("width", width + margin.left + margin.right)
+        //     .attr("height", height + margin.top + margin.bottom)
+        //     .append("g")
+        //     .attr("transform",
+        //         "translate(" + margin.left + "," + margin.top + ")")
+        //     .text("Компонента №"+i.toString());
+
+
+        //Прорисовка названия компоненты
+        var rect = d3.select("body")
             .append("svg")
             .attr("width", W)
-            .attr("height", H)
+            .attr("height", 50)
+            .append("g")
+            .attr("transform", "translate(" + 0 + "," + 0 + ")");
 
-
-        svg.append("text")
+        rect.append("text")
             .attr("transform", "translate(100,0)")
-            .attr("x", 50)
+            .attr("x", 70)
             .attr("y", plot_margin)
             .attr("font-size", "20px")
             .attr("class", "title")
-            .text("Population bar chart")
+            .text("Компонента №"+i.toString())
+
+
+        //Комплексная плоскость
+
+        var extent = 50,
+            pointNumerator = {r:45,i:0},
+            pointDenominator = {r:5, i:-5},
+            width = WI, height = HI,
+            margin = {top:10, left:10, bottom:10, right:10},
+            plotWidth = width-(margin.left+margin.right),
+            plotHeight = height-(margin.top+margin.bottom);
+
+        // var drag = d3.behavior.drag()
+        //     .on('drag', dragmove);
 
 
 
 
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .attr("transform", "translate(" + 10 + "," + 10 + ")");
+
+
+        // svg.append("text")
+        //     .attr("transform", "translate(100,0)")
+        //     .attr("x", 50)
+        //     .attr("y", plot_margin)
+        //     .attr("font-size", "20px")
+        //     .attr("class", "title")
+        //     .text("Компонента №"+i.toString())
+
+
+
+
+
+        // svg.append("line")
+        //     .attr("class", "axis")
+        //     .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
+        //     .attr("y2", margin.top + yCirc(0)).attr("x2", W);
+        //
+        // svg.append("line")
+        //     .attr("class", "axis")
+        //     .attr("x1", margin.left + xCirc(0)).attr("y1", plot_margin)
+        //     .attr("x2", margin.left + xCirc(0)).attr("y2", H);
+
+
+        // var margin = {top: 10, right: 30, bottom: 30, left: 60},
+        //     width = 460 - margin.left - margin.right,
+        //     height = 400 - margin.top - margin.bottom;
+
+
+
+
+        var scaleX = d3.scale.linear()
+            .domain([-extent, +extent])
+            .range([0, plotWidth]);
+
+        var scaleY = d3.scale.linear()
+            .domain([extent, -extent])
+            .range([0, plotWidth]);
+
+        var xAxis = d3.svg.axis().scale(scaleX)
+            .orient('bottom');
+        var yAxis = d3.svg.axis().scale(scaleY)
+            .orient('left');
+
+        // var svg = d3.select('body').append('svg')
+        //     .attr({
+        //         width:500,
+        //         height:500
+        //     })
+        //     .append('g')
+        //     .attr('transform','translate('+margin.left+','+margin.top+')');
+
+
+        svg.append('g').attr({
+            'class':'x axis',
+            'transform':'translate(0,'+plotWidth/2+')',
+        })
+        .call(xAxis);
+
+
+        svg.append('g').attr({
+            'class':'y axis',
+            'transform':'translate('+plotHeight/2+',0)'
+        }).call(yAxis);
+
+
+
+
+        // W = 400;
+        // H = 400;
+        //
+        // var x = d3.scaleLinear()
+        //     .domain([0,100])
+        //     .range([ 0, W ]);
+        // svg.append("g")
+        //     .attr("transform", "translate(40," + H + ")")
+        //     .call(d3.axisBottom(x));
+        //
+        // // Add Y axis
+        // var y = d3.scaleLinear()
+        //     .domain([0, 13])
+        //     .range([ H, 0 ]);
+        // svg.append("g")
+        //     // .attr("transform", "translate("+W+",300)")
+        //     .call(d3.axisLeft(y));
+
+
+
+
+        // var xAxis = d3.svg.axis
+        //     .scale(scaleX)
+        //     .orient("bottom"); //Подписываем числа снизу от оcи X
+        // var yAxis = d3.svg.axis()
+        //     .scale(scaleY)
+        //     .orient("left"); //Подписываем числа слева от оси Y
+
+
+
+        // var x = d3.scaleLinear()
+        //     .domain([1,100])
+        //     .range([ 0, W ]);
+        // svg.append("g")
+        //     // .attr("transform", "translate(0," + H + ")")
+        //     .attr("transform", "translate(" + 1000+','+ H + ")")
+        //     .call(d3.axisBottom(x));
+        //
+        // // Add Y axis
+        // var y = d3.scaleLinear()
+        //     .domain([0, 13])
+        //     .range([ 0, H ]);
+        // svg.append("g")
+        //     .call(d3.axisLeft(y));
+
+
+
+
+
+        // console.log(re)
+        // console.log(im)
+
+        //Строим затухание вектора
+        // svg.append('path')
+        //     .datum(realImage)
+        //     .attr('stroke', 'black')
+        //     .attr('stroke-width', 2)
+        //     .attr('fill', 'none')
+        //     .attr("d", d3.line()
+        //         .x(function(d) { return x(d.x) })
+        //         .y(function(d) { return y(d.y) })
+        //     )
+
+
+
+        console.log(svg);
+
+
+        return svg;
+    }
+
+
+    function drowArrow(svg,xy,arrow_width,arrow_color){
+
+        // var bBox = svg.getBBox();
+        // console.log('XxY', bBox.x + 'x' + bBox.y);
+        // console.log('size', bBox.width + 'x' + bBox.height);
+
+        // console.log(height)
+        // console.log(width)
+
+        //arrow
+        svg.append("svg:defs").append("svg:marker")
+            .attr("id", "triangle")
+            .attr("refX", 6)
+            .attr("refY", 6)
+            .attr("markerWidth", 30)
+            .attr("markerHeight", 30)
+            .attr("markerUnits","userSpaceOnUse")
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M 0 0 12 6 0 12 3 6")
+            .style("fill", "black");
+
+
+
+        xy[0] = xy[0]+WI/2 - 10;
+        xy[1] = xy[1]+WI/2 - 10;
+
+        xy[2] = xy[2]+HI/2 - 10;
+        xy[3] = -xy[3]+HI/2 - 10;
+
+        console.log("ddsfs")
+
+        //line
         svg.append("line")
-            .attr("class", "axis")
-            .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
-            .attr("y2", margin.top + yCirc(0)).attr("x2", W);
+            .attr("x1", xy[0])
+            .attr("y1", xy[1])
+            .attr("x2", xy[2])
+            .attr("y2", xy[3])
 
-        svg.append("line")
-            .attr("class", "axis")
-            .attr("x1", margin.left + xCirc(0)).attr("y1", plot_margin)
-            .attr("x2", margin.left + xCirc(0)).attr("y2", H);
-
-
-
-
-
-
+            .attr("stroke-width", arrow_width)
+            .attr("stroke", arrow_color)
+            .attr("marker-end", "url(#triangle)");
 
     }
 
@@ -201,8 +503,14 @@
 
     function generateSignal(){
 
+        //Генерация массива времени
+        t = Array.from({length: t_lim/dt}, (x, i) => i);
+        for (var n = 0; n < t.length; n++) {  t[n] = t[n]*dt; }
+
+
         //Итерируемся по таблице и собираем коэффициенты каждой составляющей
         var table = document.getElementById("signal_table"); // find table to append to
+
 
         components = new Array(table.rows.length-1);
 
@@ -217,7 +525,7 @@
             components[i-1] = components[i-1].map(i =>{ return isNaN(i) ? 0 : i});
 
             //Создание графиков
-            createPlot();
+            createPlot(i);
 
         }
 
@@ -322,6 +630,10 @@
         w = W - margin.left - margin.right,
         h = H - margin.top - margin.bottom,
 
+
+        WI = 500;
+        HI = 500;
+
         radius = 140,
         theta = 0,
         xmax = 1.5,
@@ -331,82 +643,91 @@
         gDomain = d3.range(0, xmax, xmax / 1000), // graph domain
 
         C = types.square, // coeffiecients
-        L = 6,            // size
+        L = 4,            // size
         F = 0.3,          // frequence
 
-        yCirc = d3.scale.linear().domain([-1, 1]).range([h / 2 + radius, h / 2 - radius]),
-        xCirc = d3.scale.linear().domain([-1, 1]).range([0, 2 * radius]),
-        rAxis = d3.scale.linear().domain([0, 1]).range([0, radius]),
-        xAxis = d3.scale.linear().range([radius, W - margin.left]),
-
-        Fxy, fx, fy,
-
-        draw, timer, data = [];
-
-    //Прорисовка фурье
-    var graph = d3.svg.line()
-        .x(function (d) {
-            return xAxis(d);
-        })
-        .y(function (d) {
-            return yCirc(fy(theta - d));
-        });
+        // yCirc = d3.scaleLinear().domain([-1, 1]).range([h / 2 + radius, h / 2 - radius]),
+        // xCirc = d3.scaleLinear().domain([-1, 1]).range([0, 2 * radius]),
+        // rAxis = d3.scaleLinear().domain([0, 1]).range([0, radius]),
+        // xAxis = d3.scaleLinear().range([radius, W - margin.left]),
 
 
-    //Проекция (1 линия, прорисовыващая проекцию (график))
-    var proj = d3.svg.line()
-        .x(function (d) {
-            return xCirc(d.x);
-        })
-        .y(function (d) {
-            return yCirc(d.y);
-        });
-
-
-    //Движение прорисованного графика
-
-    var trace = d3.svg.line()
-        .x(function (d) {
-            return xCirc(fx(d));
-        })
-        .y(function (d) {
-            return yCirc(fy(d));
-        });
+        // yCirc = d3.scaleLinear().domain([-1, 1]).range([h / 2 + radius, h / 2 - radius]),
+        // xCirc = d3.scaleLinear().domain([-1, 1]).range([0, 2 * radius]),
+        // rAxis = d3.scaleLinear().domain([0, 1]).range([0, radius]),
+        // xAxis = d3.scaleLinear().range([radius, W - margin.left]),
 
 
 
-    function gTransform(d) {
-        return "translate(" + xCirc(d.x) + "," + yCirc(d.y) + ")";
-    }
-
-    function hTransform(d) {
-        return "translate(" + xAxis(d.f) + "," + yCirc(0) + ")";
-    }
+        // Fxy, fx, fy,
+        //
+        // draw, timer, data = [];
 
 
 
+    // //Прорисовка фурье
+    // var graph = d3.svg.line()
+    //     .x(function (d) {
+    //         return xAxis(d);
+    //     })
+    //     .y(function (d) {
+    //         return yCirc(fy(theta - d));
+    //     });
+    //
+    //
+    // //Проекция (1 линия, прорисовыващая проекцию (график))
+    // var proj = d3.svg.line()
+    //     .x(function (d) {
+    //         return xCirc(d.x);
+    //     })
+    //     .y(function (d) {
+    //         return yCirc(d.y);
+    //     });
+    //
+    //
+    // //Движение прорисованного графика
+    // var trace = d3.svg.line()
+    //     .x(function (d) {
+    //         return xCirc(fx(d));
+    //     })
+    //     .y(function (d) {
+    //         return yCirc(fy(d));
+    //     });
+    //
+    //
+    //
+    // function gTransform(d) {
+    //     return "translate(" + xCirc(d.x) + "," + yCirc(d.y) + ")";
+    // }
+    //
+    // function hTransform(d) {
+    //     return "translate(" + xAxis(d.f) + "," + yCirc(0) + ")";
+    // }
 
-    var svg = d3.select("body")
-        .append("svg")
-        .attr("width", W)
-        .attr("height", H)
 
-    svg.append("line")
-        .attr("class", "axis")
-        .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
-        .attr("y2", margin.top + yCirc(0)).attr("x2", W);
 
-    svg.append("line")
-        .attr("class", "axis")
-        .attr("x1", margin.left + xCirc(0)).attr("y1", 0)
-        .attr("x2", margin.left + xCirc(0)).attr("y2", H);
 
-    var vis = svg.append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    // var svg = d3.select("body")
+    //     .append("svg")
+    //     .attr("width", W)
+    //     .attr("height", H)
+    //
+    // svg.append("line")
+    //     .attr("class", "axis")
+    //     .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
+    //     .attr("y2", margin.top + yCirc(0)).attr("x2", W);
+    //
+    // svg.append("line")
+    //     .attr("class", "axis")
+    //     .attr("x1", margin.left + xCirc(0)).attr("y1", 0)
+    //     .attr("x2", margin.left + xCirc(0)).attr("y2", H);
+    //
+    // var vis = svg.append("g")
+    //     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var gPath = vis.append("path").attr("class", "graph");
-    var tPath = vis.append("path").attr("class", "trace");
-    var pPath = vis.append("path").attr("class", "proj");
+    // var gPath = vis.append("path").attr("class", "graph");
+    // var tPath = vis.append("path").attr("class", "trace");
+    // var pPath = vis.append("path").attr("class", "proj");
 
 
 
@@ -432,6 +753,9 @@
     function calc() {
         if (!Fxy) cache();
         Fxy.forEach(function (f, i) {
+
+
+
             var d = data[i] || (data[i] = {x: 0, y: 0, r: 0});
             d.x = f.X(theta);
             d.y = f.Y(theta);
@@ -469,88 +793,92 @@
         return co;
     }
 
-    function drawGraph() {
-        xAxis.domain([0, xmax]);
-        coeff().attr("transform", gTransform);
-        var last = data[data.length - 1];
-        pPath.attr("d", proj([last, {x: 0, y: last.y}]));
-        gPath.attr("d", graph(gDomain));
-        tPath.attr("d", trace(tDomain));
-    }
+    // function drawGraph() {
+    //     xAxis.domain([0, xmax]);
+    //     coeff().attr("transform", gTransform);
+    //
+    //     //Координаты прорисовки окружностей
+    //     //console.log(data)
+    //
+    //     var last = data[data.length - 1];
+    //     pPath.attr("d", proj([last, {x: 0, y: last.y}]));
+    //     gPath.attr("d", graph(gDomain));
+    //     tPath.attr("d", trace(tDomain));
+    // }
 
-    function drawHisto() {
-        xAxis.domain([1, L]);
-        coeff().attr("transform", hTransform);
-    }
+    // function drawHisto() {
+    //     xAxis.domain([1, L]);
+    //     coeff().attr("transform", hTransform);
+    // }
 
-    function toggle(callback) {
-        var tran;
-        tran = (draw === drawGraph) ? hTransform : gTransform;
-        draw = (draw === drawGraph) ? drawHisto : drawGraph;
-        coeff().transition()
-            .duration(1000)
-            .attr("transform", tran)
-            .each("end", once(callback));
-    }
+    // function toggle(callback) {
+    //     var tran;
+    //     tran = (draw === drawGraph) ? hTransform : gTransform;
+    //     draw = (draw === drawGraph) ? drawHisto : drawGraph;
+    //     coeff().transition()
+    //         .duration(1000)
+    //         .attr("transform", tran)
+    //         .each("end", once(callback));
+    // }
 
 
-    function toggleGraph() {
-        xAxis.domain([0, xmax]);
-        toggle(function () {
-            pPath.classed("hide", false);
-            gPath.classed("hide", false);
-            tPath.classed("hide", false);
-            play();
-        });
-    }
+    // function toggleGraph() {
+    //     xAxis.domain([0, xmax]);
+    //     toggle(function () {
+    //         pPath.classed("hide", false);
+    //         gPath.classed("hide", false);
+    //         tPath.classed("hide", false);
+    //         play();
+    //     });
+    // }
 
-    function toggleHisto() {
-        xAxis.domain([1, L]);
-        pPath.classed("hide", true);
-        gPath.classed("hide", true);
-        tPath.classed("hide", true);
-        pause();
-        toggle(drawHisto);
-    }
+    // function toggleHisto() {
+    //     xAxis.domain([1, L]);
+    //     pPath.classed("hide", true);
+    //     gPath.classed("hide", true);
+    //     tPath.classed("hide", true);
+    //     pause();
+    //     toggle(drawHisto);
+    // }
 
-    function play() {
-        if (timer) return;
-        (function loop() {
-            drawGraph();
-            theta += F * rate;
-            timer = setTimeout(loop, rate * 1000);
-        })();
-    }
+    // function play() {
+    //     if (timer) return;
+    //     (function loop() {
+    //         drawGraph();
+    //         theta += F * rate;
+    //         timer = setTimeout(loop, rate * 1000);
+    //     })();
+    // }
 
-    function pause() {
-        if (!timer) return;
-        clearTimeout(timer);
-        timer = null;
-    }
+    // function pause() {
+    //     if (!timer) return;
+    //     clearTimeout(timer);
+    //     timer = null;
+    // }
 
-    function redraw() {
-        cache();
-        draw();
-    }
+    // function redraw() {
+    //     cache();
+    //     draw();
+    // }
+    //
+    // d3.select("svg").on("click", function () {
+    //     (draw === drawHisto) ? toggleGraph() : toggleHisto();
+    // });
+    // d3.select("#freq").on("change", function () {
+    //     F = +this.value;
+    //     redraw();
+    // });
+    // d3.select("#size").on("change", function () {
+    //     L = +this.value;
+    //     redraw();
+    // });
+    // d3.select("#type").on("change", function () {
+    //     C = types[this.value];
+    //     redraw();
+    // });
 
-    d3.select("svg").on("click", function () {
-        (draw === drawHisto) ? toggleGraph() : toggleHisto();
-    });
-    d3.select("#freq").on("change", function () {
-        F = +this.value;
-        redraw();
-    });
-    d3.select("#size").on("change", function () {
-        L = +this.value;
-        redraw();
-    });
-    d3.select("#type").on("change", function () {
-        C = types[this.value];
-        redraw();
-    });
-
-    draw = drawGraph;
-    play();
+    // draw = drawGraph;
+    // play();
 
 
 

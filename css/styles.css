@@ -52,36 +52,80 @@ td select {
 
 
 
-.coeff .dot {
-    fill: hsla(207, 63%, 27%, 0.2);
+/*.coeff .dot {*/
+/*    fill: hsla(207, 63%, 27%, 0.2);*/
+/*}*/
+/*.coeff.last .dot {*/
+/*    fill: hsla(207, 63%, 27%, 1.0);*/
+/*}*/
+/*.coeff .circle {*/
+/*    fill: none;*/
+/*    stroke: hsl(0, 0%, 70%);*/
+/*}*/
+/*.coeff.first .circle {*/
+/*    fill: none;*/
+/*    stroke: hsl(0, 0%, 30%);*/
+/*}*/
+/*.coeff.last .circle {*/
+/*    display: none;*/
+/*}*/
+/*.graph {*/
+/*    fill: none;*/
+/*    stroke: steelblue;*/
+/*    stroke-width: 3px;*/
+/*}*/
+/*.trace {*/
+/*    fill: none;*/
+/*    stroke: steelblue;*/
+/*}*/
+/*.proj {*/
+/*    fill: none;*/
+/*    stroke: #000;*/
+/*}*/
+
+.axis{
+    font-size: 10;
+    stroke-opacity:0.5;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
-.coeff.last .dot {
-    fill: hsla(207, 63%, 27%, 1.0);
+
+.domain{
+    fill:none;
+    stroke:#000;
 }
-.coeff .circle {
-    fill: none;
-    stroke: hsl(0, 0%, 70%);
+
+.tick line{
+    stroke:#000;
 }
-.coeff.first .circle {
-    fill: none;
-    stroke: hsl(0, 0%, 30%);
+
+.in-line{
+    stroke:#000;
+    stroke-width:1;
+    stroke-dasharray:5, 5;
 }
-.coeff.last .circle {
-    display: none;
+
+.out-line{
+    stroke:#000;
+    stroke-width:1;
 }
-.graph {
-    fill: none;
-    stroke: steelblue;
-    stroke-width: 3px;
+
+.moveable{
+    stroke-width: 1px;
+    stroke:#000;
+    cursor: pointer;
+    cursor: hand;
 }
-.trace {
-    fill: none;
-    stroke: steelblue;
-}
-.proj {
-    fill: none;
-    stroke: #000;
-}
-.axis {
-    stroke: hsl(0, 0%, 70%);
-}
+
+
+
+
+
+
+
+
+
