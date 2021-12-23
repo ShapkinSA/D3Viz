@@ -104,21 +104,17 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>-->
 
+<script src="css/d3.button.js"></script>
+
+
 <script>
-
-    class Point {
-
-        constructor(x,y) {
-            this.x = x;
-            this.y = y;
-        }
-
-    }
-
 
     var π = Math.PI
     var two_π = 2 * Math.PI
     var components;
+
+    var Arrow;
+
 
     //Шаг дискретизации (сек)
     var dt = 5 * Math.pow(10,-2);
@@ -245,7 +241,7 @@
 
         //Прорисовка стрелки
         //Передаём модуль и угол стрелки
-        drowArrow(svg,[0,0.5],realImage,count,2,"black")
+        drowArrow(svg,realImage,count,2,"black")
 
 
     }
@@ -271,35 +267,9 @@
             .text("Компонента №"+i.toString())
 
 
+        //Параметры всего полотна
+
         //Комплексная плоскость
-        var extent = 50,
-            pointNumerator = {r:45,i:0},
-            pointDenominator = {r:5, i:-5},
-            width = WI, height = HI,
-            margin = {top:10, left:10, bottom:10, right:10},
-            plotWidth = width-(margin.left+margin.right),
-            plotHeight = height-(margin.top+margin.bottom);
-
-        // var drag = d3.behavior.drag()
-        //     .on('drag', dragmove);
-
-
-        //Данные для построения
-        // var data = d3.range(0, 2 * Math.PI, .01).map(function(t) {
-        //     return [t, Math.sin(2 * t) * Math.cos(2 * t)];
-        // });
-
-
-        //Данные для построения
-        // var data = d3.range(0, 2 * Math.PI, .01).map(function(t) {
-        //     //для каждого угла вектор
-        //     return [t, 0.5*Math.sin(2 * t) ];
-        // });
-
-        var data = realImage;
-
-        console.log(realImage)
-
         var width = 500,
             height = 500,
             radius = Math.min(width, height) / 2 - 30;
@@ -353,181 +323,63 @@
             .text(function(d) { return d + "°"; });
 
         svg.append("path")
-            .datum(data)
+            .datum(realImage)
             .attr("class", "line")
             .attr("d", line);
 
 
 
-
-
-
-
-
-
-
-
-
-        // var svg = d3.select("body")
+        //Прорисовка кнопок для запуска осциллограммы
+        //Прорисовка названия компоненты
+        // var footer = d3.select("body")
         //     .append("svg")
-        //     .attr("width", width)
-        //     .attr("height", height)
-        //     .append("g")
-        //     .attr("transform", "translate(" + 10 + "," + 10 + ")");
+        //     .attr("width", W)
+        //     .attr("height", 50);
         //
+        // footer
+        //     .append("button")
+        //     .html("Click me")
+        //     .attr("transform", "translate(" + 50 + "," + 50 + ")")
+        //     .on("click", () => {
+        //         console.log("you clicked me")
+        //     });
+
+
+
+        var data = [{label: "Воспроизведение", x: 100, y: 60, function: function(){ playOcs(svg,realImage); } }]
+
+        var ggg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", 70);
+
+        var button = d3.button();
+
+        var buttons = ggg.selectAll(".button")
+            .data(data)
+            .enter()
+            .append("g")
+            .attr("class", "button")
+            .call(button);
+
+
+
         //
+        // var aa = d3.select("#footer")
+        // var fo = aa.append('foreignObject')
+        //     .attr("x", 20)
+        //     .attr("y", 20)
+        //     .attr("width", 220)
+        //     .attr("class", svg-tooltip)
+        // var div = fo.append('xhtml:div')
+        //     .append('div')
+        //     .attr("class", "tooltip")
+        // div.append('div')
+        //     .attr('class', 'lead')
+        //     .html('<button onclick="trashfuntion()">Click Me</button>' );
         //
-        // var scaleX = d3.scaleLinear()
-        //     .domain([-extent, +extent])
-        //     .range([0, plotWidth]);
-        //
-        // var scaleY = d3.scaleLinear()
-        //     .domain([extent, -extent])
-        //     .range([0, plotWidth]);
-        //
-        // // var xAxis = d3.svg.axis().scale(scaleX)
-        // //     .orient('bottom');
-        // // var yAxis = d3.svg.axis().scale(scaleY)
-        // //     .orient('left');
-        //
-        //
-        // var xAxis = d3.axisBottom(scaleX).tickFormat(function(d){ return d.x;});
-        // var yAxis = d3.axisLeft(scaleY);
-        //
-        // // var xAxis = d3.svg.axis().scale(scaleX).tickFormat(function(d) { return d.x;});
-        // // var yAxis = d3.svg.axis().scale(scaleY).orient("left");
-        //
-        //
-        // console.log(xAxis)
-        // console.log(yAxis)
-
-
-        // var svg = d3.select('body').append('svg')
-        //     .attr({
-        //         width:500,
-        //         height:500
-        //     })
-        //     .append('g')
-        //     .attr('transform','translate('+margin.left+','+margin.top+')');
-
-
-
-
-//         svg.append('g')
-//             .attr("class","x axis")
-//             .attr("transform", "translate(0"+","+plotWidth/2+')')
-//             .call(xAxis);
-//         // .call(axisBottom(xAxis));
-//
-//
-//         svg.append('g')
-//             .attr("class","y axis")
-//             .attr("transform", "translate(0"+","+plotHeight/2+')')
-//             .call(yAxis);
-//
-//         // }).call(axisLeft(yAxis));
-//
-//
-//
-//         // создаем набор вертикальных линий для сетки
-//         d3.selectAll("g.x-axis g.tick")
-//             .append("line") // добавляем линию
-//             .classed("grid-line", true) // добавляем класс
-//             .attr("x1", 0)
-//             .attr("y1", 0)
-//             .attr("x2", 0)
-//             .attr("y2", - (plotHeight));
-//
-// // рисуем горизонтальные линии
-//         d3.selectAll("g.y-axis g.tick")
-//             .append("line")
-//             .classed("grid-line", true)
-//             .attr("x1", 0)
-//             .attr("y1", 0)
-//             .attr("x2", plotWidth)
-//             .attr("y2", 0);
-
-
-
-
-        // svg.append('g').attr({
-        //     'class':'x axis',
-        //     'transform':'translate(0,'+plotWidth/2+')',
-        // })
-        //     .call(xAxis);
-        // // .call(axisBottom(xAxis));
-        //
-        //
-        // svg.append('g').attr({
-        //     'class':'y axis',
-        //     'transform':'translate('+plotHeight/2+',0)'
-        // }).call(yAxis);
-
-
-        // W = 400;
-        // H = 400;
-        //
-        // var x = d3.scaleLinear()
-        //     .domain([0,100])
-        //     .range([ 0, W ]);
-        // svg.append("g")
-        //     .attr("transform", "translate(40," + H + ")")
-        //     .call(d3.axisBottom(x));
-        //
-        // // Add Y axis
-        // var y = d3.scaleLinear()
-        //     .domain([0, 13])
-        //     .range([ H, 0 ]);
-        // svg.append("g")
-        //     // .attr("transform", "translate("+W+",300)")
-        //     .call(d3.axisLeft(y));
-
-
-
-
-        // var xAxis = d3.svg.axis
-        //     .scale(scaleX)
-        //     .orient("bottom"); //Подписываем числа снизу от оcи X
-        // var yAxis = d3.svg.axis()
-        //     .scale(scaleY)
-        //     .orient("left"); //Подписываем числа слева от оси Y
-
-
-
-        // var x = d3.scaleLinear()
-        //     .domain([1,100])
-        //     .range([ 0, W ]);
-        // svg.append("g")
-        //     // .attr("transform", "translate(0," + H + ")")
-        //     .attr("transform", "translate(" + 1000+','+ H + ")")
-        //     .call(d3.axisBottom(x));
-        //
-        // // Add Y axis
-        // var y = d3.scaleLinear()
-        //     .domain([0, 13])
-        //     .range([ 0, H ]);
-        // svg.append("g")
-        //     .call(d3.axisLeft(y));
-
-
-
-
-
-        // console.log(re)
-        // console.log(im)
-
-        //Строим затухание вектора
-        // svg.append('path')
-        //     .datum(realImage)
-        //     .attr('stroke', 'black')
-        //     .attr('stroke-width', 2)
-        //     .attr('fill', 'none')
-        //     .attr("d", d3.line()
-        //         .x(function(d) { return x(d.x) })
-        //         .y(function(d) { return y(d.y) })
-        //     )
-
-
+        // function trashfuntion() {
+        //     console.log("click")
+        // }
 
 
 
@@ -536,10 +388,27 @@
     }
 
 
+    var playOcs = function(svg,realImage){
+        for (let n = 0; n < t.length; n++) {
+            setTimeout(function timer() {
+                removeArrow();
+                drowArrow(svg, realImage, n, 2, "black")
+            }, n * 1000);
+        }
+    }
 
 
-    function drowArrow(svg,xy,realImage,count,arrow_width,arrow_color){
 
+    function drowArrow(svg,realImage,count,arrow_width,arrow_color){
+
+
+
+        // svg.remove(arrow)
+
+        // Arrow.remove()
+
+
+        // svg.selectAll(Arroowww).remove()
 
         var width = 500,
             height = 500,
@@ -570,25 +439,34 @@
 
 
         // //Фаза нужной точки
+
+        console.log(count)
+        console.log(realImage)
+        console.log(realImage[count])
+
         PP = realImage[count][0];
         AA = realImage[count][1];
 
 
 
         // //line
-        svg.append("line")
-            .attr("x1", 0)
-            .attr("y1", 0)
-            .attr("x2", AA*Math.cos(PP) * (width*0.5 - 36) )
-            .attr("y2", -AA*Math.sin(PP) * (width*0.5 - 36))
+        Arrow = svg.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", AA*Math.cos(PP) * (width*0.5 - 36) )
+                .attr("y2", -AA*Math.sin(PP) * (width*0.5 - 36))
 
-            .attr("stroke-width", arrow_width)
-            .attr("stroke", arrow_color)
-            .attr("marker-end", "url(#triangle)");
+                .attr("stroke-width", arrow_width)
+                .attr("stroke", arrow_color)
+                .attr("marker-end", "url(#triangle)");
 
     }
 
 
+
+    function removeArrow(){
+        Arrow.remove()
+    }
 
 
 
@@ -624,7 +502,6 @@
 
         }
 
-        console.log(components)
 
     }
 
