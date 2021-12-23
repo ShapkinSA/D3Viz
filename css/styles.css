@@ -124,6 +124,34 @@ td select {
 
 
 
+.axis .grid-line {
+  stroke: #000;
+  shape-rendering: crispedges;
+  stroke-opacity: 0.2;
+}
+
+.axis text {
+    font: 15px sans-serif;
+}
+
+.axis line,
+.axis circle {
+    fill: none;
+    stroke: #777;
+    stroke-dasharray: 10,4;
+}
+
+.axis :last-of-type circle {
+    stroke: #333;
+    stroke-dasharray: none;
+}
+
+.line {
+    fill: none;
+    stroke: red;
+    stroke-width: 1.5px;
+}
+
 
 
 

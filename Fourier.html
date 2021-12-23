@@ -101,8 +101,8 @@
 
 <!--<div class="complex-plane"></div>-->
 
-<!--<script src="https://d3js.org/d3.v4.js"></script>-->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js" charset="utf-8"></script>-->
 
 <script>
 
@@ -204,15 +204,17 @@
 
 
         for (var n = 0; n < t.length; n++) {
-            let R = amp_t[n]*Math.cos(phase_t[n]);
-            let I = amp_t[n]*Math.sin(phase_t[n]);
+            // let R = amp_t[n]*Math.cos(phase_t[n]);
+            // let I = amp_t[n]*Math.sin(phase_t[n]);
 
             // realImage[n] = new Array(2);
             // realImage[n][0] = R;
             // realImage[n][1] = I;
+            // realImage[n]  = new Point(R,I)
 
-            realImage[n]  = new Point(R,I)
-
+            realImage[n] = new Array(2);
+            realImage[n][1] = amp_t[n];
+            realImage[n][0] = phase_t[n];
 
         }
 
@@ -239,33 +241,17 @@
         let svg = createSvgAxis(realImage,i);
 
 
+        let count = 0;
 
         //Прорисовка стрелки
-        drowArrow(svg,[0,0,50,70],2,"black")
+        //Передаём модуль и угол стрелки
+        drowArrow(svg,[0,0.5],realImage,count,2,"black")
 
 
     }
 
 
     function createSvgAxis(realImage,i){
-
-        //Отступ от пред графика
-        var plot_margin = 25;
-
-
-        // var margin = {top: 10, right: 30, bottom: 30, left: 60},
-        //     width = 460 - margin.left - margin.right,
-        //     height = 400 - margin.top - margin.bottom;
-        //
-        // // append the svg object to the body of the page
-        // var svg = d3.select("body")
-        //     .append("svg")
-        //     .attr("width", width + margin.left + margin.right)
-        //     .attr("height", height + margin.top + margin.bottom)
-        //     .append("g")
-        //     .attr("transform",
-        //         "translate(" + margin.left + "," + margin.top + ")")
-        //     .text("Компонента №"+i.toString());
 
 
         //Прорисовка названия компоненты
@@ -279,14 +265,13 @@
         rect.append("text")
             .attr("transform", "translate(100,0)")
             .attr("x", 70)
-            .attr("y", plot_margin)
+            .attr("y", 25)
             .attr("font-size", "20px")
             .attr("class", "title")
             .text("Компонента №"+i.toString())
 
 
         //Комплексная плоскость
-
         var extent = 50,
             pointNumerator = {r:45,i:0},
             pointDenominator = {r:5, i:-5},
@@ -299,58 +284,123 @@
         //     .on('drag', dragmove);
 
 
+        //Данные для построения
+        // var data = d3.range(0, 2 * Math.PI, .01).map(function(t) {
+        //     return [t, Math.sin(2 * t) * Math.cos(2 * t)];
+        // });
 
 
-        var svg = d3.select("body")
-            .append("svg")
+        //Данные для построения
+        // var data = d3.range(0, 2 * Math.PI, .01).map(function(t) {
+        //     //для каждого угла вектор
+        //     return [t, 0.5*Math.sin(2 * t) ];
+        // });
+
+        var data = realImage;
+
+        console.log(realImage)
+
+        var width = 500,
+            height = 500,
+            radius = Math.min(width, height) / 2 - 30;
+
+        var r = d3.scaleLinear()
+            .domain([0, 1])
+            .range([0, radius]);
+
+        var line = d3.radialLine()
+            .radius(function(d) { return r(d[1]); })
+            .angle(function(d) { return -d[0] + Math.PI / 2; });
+
+
+
+        var svg = d3.select("body").append("svg")
             .attr("width", width)
             .attr("height", height)
             .append("g")
-            .attr("transform", "translate(" + 10 + "," + 10 + ")");
+            .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+        var gr = svg.append("g")
+            .attr("class", "r axis")
+            .selectAll("g")
+            .data(r.ticks(5).slice(1))
+            .enter().append("g");
+
+        gr.append("circle")
+            .attr("r", r);
+
+        gr.append("text")
+            .attr("y", function(d) { return -r(d) - 4; })
+            .attr("transform", "rotate(15)")
+            .style("text-anchor", "middle")
+            .text(function(d) { return d; });
+
+        var ga = svg.append("g")
+            .attr("class", "a axis")
+            .selectAll("g")
+            .data(d3.range(0, 360, 30))
+            .enter().append("g")
+            .attr("transform", function(d) { return "rotate(" + -d + ")"; });
+
+        ga.append("line")
+            .attr("x2", radius);
+
+        ga.append("text")
+            .attr("x", radius + 6)
+            .attr("dy", ".85em")
+            .style("text-anchor", function(d) { return d < 270 && d > 90 ? "end" : null; })
+            .attr("transform", function(d) { return d < 270 && d > 90 ? "rotate(180 " + (radius + 6) + ",0)" : null; })
+            .text(function(d) { return d + "°"; });
+
+        svg.append("path")
+            .datum(data)
+            .attr("class", "line")
+            .attr("d", line);
 
 
-        // svg.append("text")
-        //     .attr("transform", "translate(100,0)")
-        //     .attr("x", 50)
-        //     .attr("y", plot_margin)
-        //     .attr("font-size", "20px")
-        //     .attr("class", "title")
-        //     .text("Компонента №"+i.toString())
 
 
 
 
 
-        // svg.append("line")
-        //     .attr("class", "axis")
-        //     .attr("y1", margin.top + yCirc(0)).attr("x1", 0)
-        //     .attr("y2", margin.top + yCirc(0)).attr("x2", W);
+
+
+
+
+
+        // var svg = d3.select("body")
+        //     .append("svg")
+        //     .attr("width", width)
+        //     .attr("height", height)
+        //     .append("g")
+        //     .attr("transform", "translate(" + 10 + "," + 10 + ")");
         //
-        // svg.append("line")
-        //     .attr("class", "axis")
-        //     .attr("x1", margin.left + xCirc(0)).attr("y1", plot_margin)
-        //     .attr("x2", margin.left + xCirc(0)).attr("y2", H);
+        //
+        //
+        // var scaleX = d3.scaleLinear()
+        //     .domain([-extent, +extent])
+        //     .range([0, plotWidth]);
+        //
+        // var scaleY = d3.scaleLinear()
+        //     .domain([extent, -extent])
+        //     .range([0, plotWidth]);
+        //
+        // // var xAxis = d3.svg.axis().scale(scaleX)
+        // //     .orient('bottom');
+        // // var yAxis = d3.svg.axis().scale(scaleY)
+        // //     .orient('left');
+        //
+        //
+        // var xAxis = d3.axisBottom(scaleX).tickFormat(function(d){ return d.x;});
+        // var yAxis = d3.axisLeft(scaleY);
+        //
+        // // var xAxis = d3.svg.axis().scale(scaleX).tickFormat(function(d) { return d.x;});
+        // // var yAxis = d3.svg.axis().scale(scaleY).orient("left");
+        //
+        //
+        // console.log(xAxis)
+        // console.log(yAxis)
 
-
-        // var margin = {top: 10, right: 30, bottom: 30, left: 60},
-        //     width = 460 - margin.left - margin.right,
-        //     height = 400 - margin.top - margin.bottom;
-
-
-
-
-        var scaleX = d3.scale.linear()
-            .domain([-extent, +extent])
-            .range([0, plotWidth]);
-
-        var scaleY = d3.scale.linear()
-            .domain([extent, -extent])
-            .range([0, plotWidth]);
-
-        var xAxis = d3.svg.axis().scale(scaleX)
-            .orient('bottom');
-        var yAxis = d3.svg.axis().scale(scaleY)
-            .orient('left');
 
         // var svg = d3.select('body').append('svg')
         //     .attr({
@@ -361,19 +411,57 @@
         //     .attr('transform','translate('+margin.left+','+margin.top+')');
 
 
-        svg.append('g').attr({
-            'class':'x axis',
-            'transform':'translate(0,'+plotWidth/2+')',
-        })
-        .call(xAxis);
 
 
-        svg.append('g').attr({
-            'class':'y axis',
-            'transform':'translate('+plotHeight/2+',0)'
-        }).call(yAxis);
+//         svg.append('g')
+//             .attr("class","x axis")
+//             .attr("transform", "translate(0"+","+plotWidth/2+')')
+//             .call(xAxis);
+//         // .call(axisBottom(xAxis));
+//
+//
+//         svg.append('g')
+//             .attr("class","y axis")
+//             .attr("transform", "translate(0"+","+plotHeight/2+')')
+//             .call(yAxis);
+//
+//         // }).call(axisLeft(yAxis));
+//
+//
+//
+//         // создаем набор вертикальных линий для сетки
+//         d3.selectAll("g.x-axis g.tick")
+//             .append("line") // добавляем линию
+//             .classed("grid-line", true) // добавляем класс
+//             .attr("x1", 0)
+//             .attr("y1", 0)
+//             .attr("x2", 0)
+//             .attr("y2", - (plotHeight));
+//
+// // рисуем горизонтальные линии
+//         d3.selectAll("g.y-axis g.tick")
+//             .append("line")
+//             .classed("grid-line", true)
+//             .attr("x1", 0)
+//             .attr("y1", 0)
+//             .attr("x2", plotWidth)
+//             .attr("y2", 0);
 
 
+
+
+        // svg.append('g').attr({
+        //     'class':'x axis',
+        //     'transform':'translate(0,'+plotWidth/2+')',
+        // })
+        //     .call(xAxis);
+        // // .call(axisBottom(xAxis));
+        //
+        //
+        // svg.append('g').attr({
+        //     'class':'y axis',
+        //     'transform':'translate('+plotHeight/2+',0)'
+        // }).call(yAxis);
 
 
         // W = 400;
@@ -441,21 +529,30 @@
 
 
 
-        console.log(svg);
+
 
 
         return svg;
     }
 
 
-    function drowArrow(svg,xy,arrow_width,arrow_color){
 
-        // var bBox = svg.getBBox();
-        // console.log('XxY', bBox.x + 'x' + bBox.y);
-        // console.log('size', bBox.width + 'x' + bBox.height);
 
-        // console.log(height)
-        // console.log(width)
+    function drowArrow(svg,xy,realImage,count,arrow_width,arrow_color){
+
+
+        var width = 500,
+            height = 500,
+            radius = Math.min(width, height) / 2 - 30;
+
+        var r = d3.scaleLinear()
+            .domain([0, 1])
+            .range([0, radius]);
+
+        var line = d3.radialLine()
+            .radius(function(d) { return r(d[1]); })
+            .angle(function(d) { return -d[0] + Math.PI / 2; });
+
 
         //arrow
         svg.append("svg:defs").append("svg:marker")
@@ -472,20 +569,18 @@
 
 
 
-        xy[0] = xy[0]+WI/2 - 10;
-        xy[1] = xy[1]+WI/2 - 10;
+        // //Фаза нужной точки
+        PP = realImage[count][0];
+        AA = realImage[count][1];
 
-        xy[2] = xy[2]+HI/2 - 10;
-        xy[3] = -xy[3]+HI/2 - 10;
 
-        console.log("ddsfs")
 
-        //line
+        // //line
         svg.append("line")
-            .attr("x1", xy[0])
-            .attr("y1", xy[1])
-            .attr("x2", xy[2])
-            .attr("y2", xy[3])
+            .attr("x1", 0)
+            .attr("y1", 0)
+            .attr("x2", AA*Math.cos(PP) * (width*0.5 - 36) )
+            .attr("y2", -AA*Math.sin(PP) * (width*0.5 - 36))
 
             .attr("stroke-width", arrow_width)
             .attr("stroke", arrow_color)
